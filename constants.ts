@@ -11,12 +11,12 @@ export const TICK_RATE_MS = 600;
 
 // G1 GC Configuration
 export const G1_CONFIG = {
-  MAX_EDEN_REGIONS: 25,           // Trigger Young GC when reached
-  OLD_GEN_THRESHOLD: 45,          // Trigger Concurrent Mark when Total Heap > 45% (IHOP)
-  MAX_AGE: 3,                     // Age to promote to Old Gen
+  MAX_EDEN_REGIONS: 15,           // Trigger Young GC when reached (lowered to fill heap faster)
+  OLD_GEN_THRESHOLD: 35,          // Trigger Concurrent Mark when Total Heap > 35% (IHOP)
+  MAX_AGE: 2,                     // Age to promote to Old Gen (lowered for faster promotion)
   HUMONGOUS_CHANCE: 0.05,         // 5% chance for humongous allocation
   TARGET_FILL_RATE: 85,           // Target fill rate for compacted regions
-  MIXED_GC_LIVENESS_THRESHOLD: 65, // Regions with liveness below this are candidates
+  MIXED_GC_LIVENESS_THRESHOLD: 85, // Regions with liveness below this are candidates (raised to include more)
   MIXED_GC_MAX_CSET_SIZE: 8,      // Maximum regions in Mixed GC CSet
 } as const;
 

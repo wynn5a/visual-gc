@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { LogEntry } from '../types';
-import { Terminal, AlertCircle, CheckCircle, Info, AlertTriangle, Zap } from 'lucide-react';
+import { Terminal, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react';
 
 interface EventLogProps {
     logs: LogEntry[];
@@ -23,17 +23,11 @@ const EventLogHeader: React.FC<{ count: number }> = ({ count }) => (
             GC Event Log
             <span className="bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded-full text-[10px]">{count}</span>
         </h3>
-        {count > 0 && (
-            <span className="text-[10px] text-slate-600 flex items-center gap-1">
-                <Zap size={10} />
-                Live events
-            </span>
-        )}
     </div>
 );
 
 const EventLogBody: React.FC<{ logs: LogEntry[] }> = ({ logs }) => (
-    <div className="flex-1 overflow-y-auto p-3 space-y-1.5 font-mono text-xs custom-scrollbar bg-slate-950/30">
+    <div className="flex-1 overflow-y-auto p-3 space-y-1 font-mono text-xs bg-slate-950/30">
         {logs.length === 0 ? (
             <EmptyLogState />
         ) : (
@@ -48,7 +42,7 @@ const EmptyLogState: React.FC = () => (
             <Terminal size={24} className="mx-auto mb-2 text-slate-600" />
             <p className="text-slate-400 text-sm font-medium">Ready to start</p>
             <p className="text-slate-600 text-xs mt-1">
-                Click <span className="text-emerald-400">Play</span> to begin allocation
+                Click <span className="text-emerald-400">Play</span> to begin
             </p>
         </div>
     </div>
@@ -63,50 +57,13 @@ const LogEntryItem: React.FC<LogEntryItemProps> = ({ log }) => {
     const Icon = config.icon;
 
     return (
-        <div className={`flex gap-2 p-2 rounded-lg ${config.bgClass} transition-colors animate-in fade-in slide-in-from-left-2 duration-300`}>
+        <div className={`flex items-start gap-2 p-2 rounded-md ${config.bgClass}`}>
             <Icon size={12} className={`shrink-0 mt-0.5 ${config.iconColor}`} />
-            <div className="flex-1 min-w-0">
-                <span className={`break-words ${config.textColor}`}>
-                    {formatLogMessage(log.message)}
-                </span>
-            </div>
-            <span className="text-slate-600 shrink-0 text-[10px] select-none">{log.timestamp}</span>
+            <span className={`flex-1 ${config.textColor}`}>{log.message}</span>
+            <span className="text-slate-600 shrink-0 text-[10px]">{log.timestamp}</span>
         </div>
     );
 };
-
-/**
- * Format log message to highlight important terms
- */
-function formatLogMessage(message: string): React.ReactNode {
-    // Highlight numbers and percentages
-    const parts = message.split(/(\d+(?:\.\d+)?%?|\bEden\b|\bSurvivor\b|\bOld\b|\bHumongous\b|\bSTW\b|\bYoung GC\b|\bMixed GC\b|\bZGC\b)/g);
-
-    return parts.map((part, i) => {
-        if (/^\d+(?:\.\d+)?%?$/.test(part)) {
-            return <span key={i} className="text-cyan-300 font-medium">{part}</span>;
-        }
-        if (part === 'Eden') {
-            return <span key={i} className="text-emerald-400 font-medium">{part}</span>;
-        }
-        if (part === 'Survivor') {
-            return <span key={i} className="text-cyan-400 font-medium">{part}</span>;
-        }
-        if (part === 'Old') {
-            return <span key={i} className="text-amber-400 font-medium">{part}</span>;
-        }
-        if (part === 'Humongous') {
-            return <span key={i} className="text-purple-400 font-medium">{part}</span>;
-        }
-        if (part === 'STW' || part === 'Young GC' || part === 'Mixed GC') {
-            return <span key={i} className="text-red-400 font-medium">{part}</span>;
-        }
-        if (part === 'ZGC') {
-            return <span key={i} className="text-indigo-400 font-medium">{part}</span>;
-        }
-        return part;
-    });
-}
 
 interface LogConfig {
     icon: React.FC<{ size: number; className?: string }>;
@@ -116,7 +73,7 @@ interface LogConfig {
 }
 
 /**
- * Returns the configuration for log entry styling based on type
+ * Simple log styling based on type only - no complex syntax highlighting
  */
 function getLogConfig(type: LogEntry['type']): LogConfig {
     switch (type) {
@@ -125,21 +82,21 @@ function getLogConfig(type: LogEntry['type']): LogConfig {
                 icon: AlertCircle,
                 iconColor: 'text-red-400',
                 textColor: 'text-red-300',
-                bgClass: 'bg-red-500/5 hover:bg-red-500/10 border-l-2 border-red-500/50'
+                bgClass: 'bg-red-500/10'
             };
         case 'warn':
             return {
                 icon: AlertTriangle,
                 iconColor: 'text-amber-400',
-                textColor: 'text-amber-300',
-                bgClass: 'bg-amber-500/5 hover:bg-amber-500/10 border-l-2 border-amber-500/50'
+                textColor: 'text-amber-200',
+                bgClass: 'bg-amber-500/10'
             };
         case 'success':
             return {
                 icon: CheckCircle,
                 iconColor: 'text-emerald-400',
                 textColor: 'text-emerald-300',
-                bgClass: 'bg-emerald-500/5 hover:bg-emerald-500/10 border-l-2 border-emerald-500/50'
+                bgClass: 'bg-emerald-500/10'
             };
         case 'info':
         default:
@@ -147,7 +104,7 @@ function getLogConfig(type: LogEntry['type']): LogConfig {
                 icon: Info,
                 iconColor: 'text-slate-500',
                 textColor: 'text-slate-300',
-                bgClass: 'bg-slate-800/20 hover:bg-slate-800/40'
+                bgClass: 'bg-transparent'
             };
     }
 }

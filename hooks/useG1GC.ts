@@ -41,10 +41,11 @@ export const useG1GC = ({
         regions: Region[],
         csetIndices: number[],
     ): { newRegions: Region[]; survivorCount: number; oldCount: number; success: boolean } => {
-        let totalToSurvivor = 0;
+        // Track surviving data by destination and age
         let totalToOld = 0;
+        const survivorByAge: { amount: number; age: number }[] = [];
 
-        // Calculate live data volumes
+        // Calculate live data volumes and track ages
         csetIndices.forEach(i => {
             const r = regions[i];
             const survivingAmount = calculateSurvivingData(r);
@@ -53,16 +54,21 @@ export const useG1GC = ({
                 if (r.type === RegionType.OLD) {
                     // Old regions stay in Old
                     totalToOld += survivingAmount;
-                } else if (r.age >= MAX_AGE) {
-                    // Aged Young regions promote to Old
-                    totalToOld += survivingAmount;
                 } else {
-                    // Young regions move to Survivor
-                    totalToSurvivor += survivingAmount;
+                    // Eden or Survivor - check if should promote
+                    const newAge = r.age + 1;
+                    if (newAge >= MAX_AGE) {
+                        // Promote to Old
+                        totalToOld += survivingAmount;
+                    } else {
+                        // Stay in Survivor with incremented age
+                        survivorByAge.push({ amount: survivingAmount, age: newAge });
+                    }
                 }
             }
         });
 
+        const totalToSurvivor = survivorByAge.reduce((sum, s) => sum + s.amount, 0);
         const survivorRegionsNeeded = calculateRegionsNeeded(totalToSurvivor, TARGET_FILL_RATE);
         const oldRegionsNeeded = calculateRegionsNeeded(totalToOld, TARGET_FILL_RATE);
         const freeIndices = getFreeRegionIndices(regions);
@@ -82,7 +88,12 @@ export const useG1GC = ({
 
         let freePtr = 0;
 
-        // Allocate Survivor regions
+        // Allocate Survivor regions with proper ages
+        // Use average age of surviving data for simplicity
+        const avgSurvivorAge = survivorByAge.length > 0
+            ? Math.round(survivorByAge.reduce((sum, s) => sum + s.age * s.amount, 0) / totalToSurvivor)
+            : 1;
+
         for (let k = 0; k < survivorRegionsNeeded; k++) {
             const idx = freeIndices[freePtr++];
             const isLastRegion = k === survivorRegionsNeeded - 1;
@@ -90,7 +101,7 @@ export const useG1GC = ({
                 ? (totalToSurvivor % TARGET_FILL_RATE)
                 : TARGET_FILL_RATE;
 
-            newRegions[idx] = createRegion(newRegions[idx], RegionType.SURVIVOR, fill, 90, 1);
+            newRegions[idx] = createRegion(newRegions[idx], RegionType.SURVIVOR, fill, 90, avgSurvivorAge);
         }
 
         // Allocate Old regions
@@ -207,7 +218,8 @@ export const useG1GC = ({
             prev.map(r => r.type === RegionType.OLD ? {
                 ...r,
                 isTargeted: false,
-                livenessPercentage: Math.max(0, r.livenessPercentage - Math.floor(Math.random() * 30)),
+                // More aggressive liveness reduction to ensure Mixed GC candidates
+                livenessPercentage: Math.max(10, r.livenessPercentage - 30 - Math.floor(Math.random() * 30)),
             } : r)
         );
 

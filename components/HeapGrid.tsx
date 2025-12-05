@@ -17,8 +17,8 @@ export const HeapGrid: React.FC<HeapGridProps> = ({ regions }) => {
         gridTemplateRows: `repeat(${GRID_COLS}, 1fr)`
       }}
     >
-      {regions.map((region) => (
-        <RegionCell key={region.id} region={region} />
+      {regions.map((region, index) => (
+        <RegionCell key={region.id} region={region} index={index} />
       ))}
     </div>
   );
@@ -88,10 +88,24 @@ function getRegionTooltip(region: Region): TooltipInfo {
   }
 }
 
-const RegionCell: React.FC<{ region: Region }> = React.memo(({ region }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
+// Determine if tooltip should appear above or below based on row position
+function shouldShowTooltipBelow(index: number): boolean {
+  const row = Math.floor(index / GRID_COLS);
+  return row < 2;
+}
+
+interface RegionCellProps {
+  region: Region;
+  index: number;
+}
+
+const RegionCell: React.FC<RegionCellProps> = React.memo(({ region, index }) => {
+  const [isHovered, setIsHovered] = useState(false);
   const label = REGION_LABELS[region.type];
   const tooltip = getRegionTooltip(region);
+  const showBelow = shouldShowTooltipBelow(index);
+
+  const TOOLTIP_WIDTH = 160;
 
   return (
     <motion.div
@@ -100,18 +114,21 @@ const RegionCell: React.FC<{ region: Region }> = React.memo(({ region }) => {
         scale: region.isTargeted ? 0.9 : 1,
       }}
       transition={{ duration: 0.15 }}
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className={`
         aspect-square w-full h-full
         rounded-[2px] md:rounded-sm border border-opacity-30
-        flex flex-col items-center justify-center relative overflow-visible
+        flex flex-col items-center justify-center relative
         cursor-pointer transition-shadow duration-200
         ${region.isTargeted
-          ? 'bg-red-500 border-red-400 shadow-[0_0_12px_rgba(239,68,68,0.7)] z-20'
+          ? 'bg-red-500 border-red-400 shadow-[0_0_12px_rgba(239,68,68,0.7)]'
           : COLORS[region.type]}
         ${!region.isTargeted && region.type !== RegionType.FREE ? 'hover:shadow-lg hover:brightness-110' : ''}
       `}
+      style={{
+        zIndex: isHovered ? 100 : region.isTargeted ? 20 : 1,
+      }}
     >
       {region.type !== RegionType.FREE && (
         <>
@@ -130,7 +147,7 @@ const RegionCell: React.FC<{ region: Region }> = React.memo(({ region }) => {
             />
           </div>
 
-          {/* Age dots (G1 only really) */}
+          {/* Age dots */}
           {region.age > 0 && (
             <div className="absolute top-0.5 right-0.5 flex flex-col gap-[1px]">
               {Array.from({ length: Math.min(region.age, 3) }).map((_, i) => (
@@ -141,33 +158,76 @@ const RegionCell: React.FC<{ region: Region }> = React.memo(({ region }) => {
         </>
       )}
 
-      {/* Tooltip */}
+      {/* Tooltip - using a centering wrapper */}
       <AnimatePresence>
-        {showTooltip && region.type !== RegionType.FREE && (
-          <motion.div
-            initial={{ opacity: 0, y: 5, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 5, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none"
-            style={{ minWidth: '140px' }}
+        {isHovered && region.type !== RegionType.FREE && (
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              left: '50%',
+              ...(showBelow
+                ? { top: '100%', paddingTop: '8px' }
+                : { bottom: '100%', paddingBottom: '8px' }
+              ),
+              zIndex: 1000,
+            }}
           >
-            <div className="bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-2 text-left">
-              <p className={`font-medium text-xs ${TEXT_COLORS[region.type]}`}>{tooltip.type}</p>
-              <p className="text-slate-400 text-[10px] mb-1">{tooltip.description}</p>
-              {tooltip.metrics.length > 0 && (
-                <div className="grid grid-cols-3 gap-1 mt-1 pt-1 border-t border-slate-700">
-                  {tooltip.metrics.map((m, i) => (
-                    <div key={i} className="text-center">
-                      <p className="text-[9px] text-slate-500">{m.label}</p>
-                      <p className="text-[10px] text-slate-200 font-medium">{m.value}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-700"></div>
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.12 }}
+              style={{
+                marginLeft: -TOOLTIP_WIDTH / 2,
+                width: TOOLTIP_WIDTH,
+              }}
+            >
+              <div className="bg-slate-800 border border-slate-700 rounded-lg shadow-2xl p-2.5 text-left">
+                <p className="font-medium text-sm text-white">{tooltip.type}</p>
+                <p className="text-slate-300 text-[11px] mb-1">{tooltip.description}</p>
+                {tooltip.metrics.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-1.5 pt-1.5 border-t border-slate-700">
+                    {tooltip.metrics.map((m, i) => (
+                      <div key={i} className="text-center">
+                        <p className="text-[9px] text-slate-500">{m.label}</p>
+                        <p className="text-[11px] text-slate-200 font-medium">{m.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* Arrow */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  marginLeft: -6,
+                  ...(showBelow
+                    ? { top: 0 }
+                    : { bottom: 0 }
+                  ),
+                }}
+              >
+                {showBelow ? (
+                  <div style={{
+                    width: 0,
+                    height: 0,
+                    borderLeft: '6px solid transparent',
+                    borderRight: '6px solid transparent',
+                    borderBottom: '6px solid #334155',
+                  }} />
+                ) : (
+                  <div style={{
+                    width: 0,
+                    height: 0,
+                    borderLeft: '6px solid transparent',
+                    borderRight: '6px solid transparent',
+                    borderTop: '6px solid #334155',
+                  }} />
+                )}
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -192,5 +252,6 @@ const RegionCell: React.FC<{ region: Region }> = React.memo(({ region }) => {
     prev.region.isTargeted === next.region.isTargeted &&
     prev.region.age === next.region.age &&
     prev.region.usedPercentage === next.region.usedPercentage &&
-    prev.region.livenessPercentage === next.region.livenessPercentage;
+    prev.region.livenessPercentage === next.region.livenessPercentage &&
+    prev.index === next.index;
 });
