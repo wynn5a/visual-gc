@@ -1,6 +1,4 @@
 <div align="center">
-  <img width="1200" height="475" alt="G1 & ZGC Garbage Collector Visualizer" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-
   <h1>🗑️ G1 & ZGC Garbage Collector Visualizer</h1>
 
   <p>
@@ -87,7 +85,7 @@ This interactive web application provides a **real-time visualization** of how J
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/g1-visual.git
+   git clone https://github.com/yourusername/gc-visual.git
    cd g1-visual
    ```
 
@@ -160,7 +158,7 @@ npm run preview
 ## 🏗️ Project Structure
 
 ```
-g1-visual/
+gc-visual/
 ├── App.tsx                 # Main application component
 ├── index.tsx               # Entry point
 ├── types.ts                # TypeScript type definitions

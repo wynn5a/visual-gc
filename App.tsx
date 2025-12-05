@@ -55,7 +55,7 @@ const App: React.FC = () => {
           />
 
           {/* Grid Container */}
-          <div className="flex-1 min-h-0 p-4 flex items-center justify-center overflow-hidden">
+          <div className="flex-1 min-h-0 p-2 md:p-4 flex items-center justify-center overflow-hidden">
             <div className="relative aspect-square h-full max-h-full w-auto max-w-full">
               <HeapGrid regions={regions} />
             </div>
@@ -67,9 +67,10 @@ const App: React.FC = () => {
           </div>
         </div>
 
+        {/* Right Column: Stats & Logs - Hidden on mobile when intro is shown */}
         {/* Right Column: Stats & Logs */}
-        <div className="lg:w-96 shrink-0 flex flex-col border-l border-slate-800 bg-slate-900/20 z-10 backdrop-blur-sm">
-          <div className="p-4 shrink-0">
+        <div className="lg:w-96 shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-slate-800 bg-slate-900/20 z-10 backdrop-blur-sm flex">
+          <div className="p-3 md:p-4 shrink-0">
             <StatsPanel stats={stats} currentPhase={phase} />
           </div>
           <EventLog logs={logs} />

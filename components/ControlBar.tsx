@@ -25,13 +25,13 @@ export const ControlBar: React.FC<ControlBarProps> = ({
     onSpeedChange,
 }) => {
     return (
-        <div className="shrink-0 p-4 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/50 bg-slate-900/30 backdrop-blur-sm">
+        <div className="shrink-0 p-2 md:p-4 flex flex-wrap items-center justify-between gap-2 md:gap-4 border-b border-slate-800/50 bg-slate-900/30 backdrop-blur-sm">
             {/* Left: Play/Pause Controls */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
                 <button
                     onClick={onToggleRunning}
                     className={`
-                        flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg
+                        flex items-center gap-1.5 md:gap-2 px-3 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl font-bold text-sm md:text-base transition-all shadow-lg
                         ${isRunning
                             ? 'bg-amber-500/10 text-amber-500 border border-amber-500/50 hover:bg-amber-500/20 shadow-amber-500/10'
                             : 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-400 hover:to-emerald-500 shadow-emerald-500/25'
@@ -40,23 +40,24 @@ export const ControlBar: React.FC<ControlBarProps> = ({
                 >
                     {isRunning ? (
                         <>
-                            <Pause size={18} />
+                            <Pause size={16} className="md:w-[18px] md:h-[18px]" />
                             <span>Pause</span>
                         </>
                     ) : (
                         <>
-                            <Play size={18} />
-                            <span>Start Simulation</span>
+                            <Play size={16} className="md:w-[18px] md:h-[18px]" />
+                            <span className="hidden sm:inline">Start Simulation</span>
+                            <span className="sm:hidden">Start</span>
                         </>
                     )}
                 </button>
 
                 <button
                     onClick={onReset}
-                    className="group flex items-center gap-2 p-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all border border-slate-800 hover:border-slate-700"
+                    className="group flex items-center gap-1.5 md:gap-2 p-2 md:p-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg md:rounded-xl transition-all border border-slate-800 hover:border-slate-700"
                     title="Reset Simulation"
                 >
-                    <RotateCcw size={18} className="group-hover:rotate-[-45deg] transition-transform" />
+                    <RotateCcw size={16} className="md:w-[18px] md:h-[18px] group-hover:rotate-[-45deg] transition-transform" />
                     <span className="text-sm hidden sm:inline">Reset</span>
                 </button>
             </div>
@@ -82,26 +83,26 @@ const SpeedSelector: React.FC<SpeedSelectorProps> = ({ currentSpeed, onSpeedChan
     const currentOption = SPEED_OPTIONS.find(s => s.value === currentSpeed);
 
     return (
-        <div className="flex items-center gap-3 bg-slate-900/80 p-2 rounded-xl border border-slate-800">
-            <div className="flex items-center gap-2 px-2">
+        <div className="flex items-center gap-2 md:gap-3 bg-slate-900/80 p-1.5 md:p-2 rounded-lg md:rounded-xl border border-slate-800">
+            <div className="hidden sm:flex items-center gap-2 px-2">
                 <Gauge size={14} className="text-slate-500" />
                 <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Speed</span>
             </div>
 
-            <div className="flex gap-1">
+            <div className="flex gap-0.5 md:gap-1">
                 {SPEED_OPTIONS.map(s => (
                     <button
                         key={s.value}
                         onClick={() => onSpeedChange(s.value)}
-                        className={`group relative px-3 py-1.5 text-xs rounded-lg font-medium transition-all ${currentSpeed === s.value
-                                ? 'bg-slate-700 text-white shadow-lg'
-                                : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+                        className={`group relative px-2 md:px-3 py-1 md:py-1.5 text-[10px] md:text-xs rounded-md md:rounded-lg font-medium transition-all ${currentSpeed === s.value
+                            ? 'bg-slate-700 text-white shadow-lg'
+                            : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
                             }`}
                     >
                         {s.label}
 
-                        {/* Tooltip */}
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 border border-slate-700 rounded text-[10px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                        {/* Tooltip - hidden on mobile */}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 border border-slate-700 rounded text-[10px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 hidden md:block">
                             {s.desc}
                         </div>
                     </button>
@@ -109,7 +110,7 @@ const SpeedSelector: React.FC<SpeedSelectorProps> = ({ currentSpeed, onSpeedChan
             </div>
 
             {/* Current speed indicator */}
-            <div className="hidden sm:flex items-center gap-1.5 px-2 text-[10px] text-slate-600">
+            <div className="hidden md:flex items-center gap-1.5 px-2 text-[10px] text-slate-600">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 animate-pulse"></span>
                 {currentOption?.desc || 'Normal'}
             </div>

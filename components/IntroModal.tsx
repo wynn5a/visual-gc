@@ -65,12 +65,12 @@ export const IntroModal: React.FC<IntroModalProps> = ({ mode, onClose }) => {
             </div>
 
             {/* Content */}
-            <div className="p-5 min-h-[340px]">
+            <div className="p-4 md:p-5 min-h-[280px] md:min-h-[340px] max-h-[50vh] md:max-h-none overflow-y-auto">
                 {steps[currentStep]}
             </div>
 
             {/* Footer Navigation */}
-            <div className="px-5 py-4 border-t border-slate-800/50 bg-slate-900/50 flex justify-between items-center">
+            <div className="px-4 md:px-5 py-3 md:py-4 border-t border-slate-800/50 bg-slate-900/50 flex justify-between items-center">
                 <button
                     onClick={prevStep}
                     disabled={currentStep === 0}

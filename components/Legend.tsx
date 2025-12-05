@@ -12,14 +12,14 @@ interface LegendItemProps {
 }
 
 const LegendItem: React.FC<LegendItemProps> = ({ colorClass, label, description, letter }) => (
-  <div className="group relative flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-help">
-    <div className={`w-6 h-6 rounded-md ${colorClass} border flex items-center justify-center shadow-sm`}>
-      {letter && <span className="text-[10px] font-bold text-white/90">{letter}</span>}
+  <div className="group relative flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-help">
+    <div className={`w-5 h-5 md:w-6 md:h-6 rounded-md ${colorClass} border flex items-center justify-center shadow-sm`}>
+      {letter && <span className="text-[8px] md:text-[10px] font-bold text-white/90">{letter}</span>}
     </div>
-    <span className="text-xs text-slate-300 font-medium">{label}</span>
+    <span className="text-[10px] md:text-xs text-slate-300 font-medium">{label}</span>
 
-    {/* Tooltip */}
-    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap">
+    {/* Tooltip - hidden on mobile */}
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap hidden md:block">
       <p className="text-xs text-slate-200">{description}</p>
       <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-700"></div>
     </div>
@@ -32,11 +32,11 @@ interface LegendProps {
 
 export const Legend: React.FC<LegendProps> = ({ mode }) => {
   return (
-    <div className="flex flex-wrap items-center gap-1 p-3 bg-slate-900/80 backdrop-blur-sm">
+    <div className="flex flex-wrap items-center gap-0.5 md:gap-1 p-2 md:p-3 bg-slate-900/80 backdrop-blur-sm overflow-x-auto">
       {/* Tip indicator */}
-      <div className="flex items-center gap-1 text-slate-500 text-xs mr-2 pr-3 border-r border-slate-700">
+      <div className="hidden sm:flex items-center gap-1 text-slate-500 text-xs mr-2 pr-3 border-r border-slate-700">
         <HelpCircle size={12} />
-        <span className="hidden sm:inline">Hover for info</span>
+        <span className="hidden md:inline">Hover for info</span>
       </div>
 
       <LegendItem

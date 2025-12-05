@@ -17,9 +17,9 @@ export const Header: React.FC<HeaderProps> = ({
     onToggleIntro,
 }) => {
     return (
-        <header className="h-16 shrink-0 flex items-center justify-between px-6 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md z-20">
+        <header className="h-14 md:h-16 shrink-0 flex items-center justify-between px-3 md:px-6 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md z-20">
             <Logo />
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-2 md:space-x-6">
                 <ModeSwitcher currentMode={mode} onModeChange={onModeChange} />
                 <GuideButton isActive={showIntro} onClick={onToggleIntro} />
             </div>
@@ -28,12 +28,12 @@ export const Header: React.FC<HeaderProps> = ({
 };
 
 const Logo: React.FC = () => (
-    <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 via-cyan-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 ring-1 ring-white/10">
-            <span className="font-black text-slate-900 text-sm">GC</span>
+    <div className="flex items-center gap-2 md:gap-3">
+        <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg md:rounded-xl bg-gradient-to-br from-emerald-500 via-cyan-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 ring-1 ring-white/10">
+            <span className="font-black text-slate-900 text-xs md:text-sm">GC</span>
         </div>
         <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-400 bg-clip-text text-transparent leading-none">
+            <h1 className="text-base md:text-xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-400 bg-clip-text text-transparent leading-none">
                 GC Visualizer
             </h1>
             <p className="text-slate-500 text-xs hidden sm:block">Interactive JVM Memory Simulation</p>
@@ -91,14 +91,14 @@ const ModeButton: React.FC<ModeButtonProps> = ({
 }) => (
     <button
         onClick={onClick}
-        className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 ${isActive
-                ? `bg-gradient-to-r ${activeGradient} text-white shadow-lg`
-                : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
+        className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg transition-all duration-200 flex items-center gap-1.5 md:gap-2 ${isActive
+            ? `bg-gradient-to-r ${activeGradient} text-white shadow-lg`
+            : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
             }`}
     >
         {icon}
         <div className="text-left">
-            <span className="font-bold text-sm block leading-tight">{label}</span>
+            <span className="font-bold text-xs md:text-sm block leading-tight">{label}</span>
             <span className={`text-[10px] ${isActive ? 'text-white/70' : 'text-slate-600'} hidden sm:block`}>
                 {subtitle}
             </span>
@@ -115,8 +115,8 @@ const GuideButton: React.FC<GuideButtonProps> = ({ isActive, onClick }) => (
     <button
         onClick={onClick}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${isActive
-                ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30'
+            : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
     >
         <Info size={16} />

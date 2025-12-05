@@ -17,21 +17,21 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ icon, label, value, color, tooltip }) => (
-  <div className="group relative bg-slate-900/60 p-3 rounded-xl border border-slate-800/50 flex items-center space-x-3 hover:bg-slate-800/40 transition-colors">
-    <div className={`p-2 rounded-lg bg-opacity-20 ${color}`}>
+  <div className="group relative bg-slate-900/60 p-2 md:p-3 rounded-lg md:rounded-xl border border-slate-800/50 flex items-center space-x-2 md:space-x-3 hover:bg-slate-800/40 transition-colors">
+    <div className={`p-1.5 md:p-2 rounded-lg bg-opacity-20 ${color}`}>
       {icon}
     </div>
     <div className="min-w-0 flex-1">
-      <p className="text-slate-500 text-[10px] uppercase tracking-wider truncate flex items-center gap-1">
+      <p className="text-slate-500 text-[9px] md:text-[10px] uppercase tracking-wider truncate flex items-center gap-1">
         {label}
-        {tooltip && <Info size={10} className="text-slate-600" />}
+        {tooltip && <Info size={10} className="text-slate-600 hidden md:inline" />}
       </p>
-      <p className="text-slate-200 font-bold text-lg leading-tight truncate">{value}</p>
+      <p className="text-slate-200 font-bold text-base md:text-lg leading-tight truncate">{value}</p>
     </div>
 
-    {/* Tooltip */}
+    {/* Tooltip - hidden on mobile */}
     {tooltip && (
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap">
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap hidden md:block">
         <p className="text-xs text-slate-200">{tooltip}</p>
         <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-700"></div>
       </div>
@@ -45,41 +45,42 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ stats, currentPhase }) =
   const isZGC = currentPhase.toString().startsWith('ZGC');
 
   return (
-    <div className="space-y-3">
-      {/* Current Phase Display */}
-      <div className={`bg-gradient-to-br ${phaseConfig.bgGradient} p-4 rounded-xl border ${phaseConfig.borderColor} shadow-lg`}>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-slate-400 text-[10px] uppercase tracking-wider">Current Phase</p>
+    <div className="space-y-1.5 lg:space-y-3">
+      {/* Current Phase Display - Fixed height on mobile to prevent layout shifts */}
+      <div className={`bg-gradient-to-br ${phaseConfig.bgGradient} p-2 lg:p-4 rounded-lg lg:rounded-xl border ${phaseConfig.borderColor} shadow-lg h-[72px] lg:h-auto`}>
+        <div className="flex items-center justify-between mb-1 lg:mb-2">
+          <p className="text-slate-400 text-[8px] lg:text-[10px] uppercase tracking-wider">Phase</p>
           {isSTW ? (
-            <span className="bg-red-500/20 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-              <Pause size={10} />
-              STW PAUSE
+            <span className="bg-red-500/20 text-red-400 text-[8px] lg:text-[10px] font-bold px-1.5 lg:px-2 py-0.5 rounded-full flex items-center gap-0.5 lg:gap-1">
+              <Pause size={8} className="lg:w-2.5 lg:h-2.5" />
+              STW
             </span>
           ) : currentPhase !== GCPhase.IDLE ? (
-            <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-              <Play size={10} />
-              CONCURRENT
+            <span className="bg-emerald-500/20 text-emerald-400 text-[8px] lg:text-[10px] font-bold px-1.5 lg:px-2 py-0.5 rounded-full flex items-center gap-0.5 lg:gap-1">
+              <Play size={8} className="lg:w-2.5 lg:h-2.5" />
+              <span className="hidden lg:inline">CONCURRENT</span>
+              <span className="lg:hidden">RUN</span>
             </span>
           ) : null}
         </div>
 
-        <div className={`text-xl font-black flex items-center gap-2 transition-all duration-300 ${phaseConfig.textColor}`}>
+        <div className={`text-sm lg:text-xl font-black flex items-center gap-1.5 lg:gap-2 transition-all duration-300 ${phaseConfig.textColor}`}>
           {currentPhase === GCPhase.IDLE ? (
-            <Zap size={20} />
+            <Zap size={14} className="lg:w-5 lg:h-5" />
           ) : (
-            <Activity size={20} className="animate-pulse" />
+            <Activity size={14} className="lg:w-5 lg:h-5 animate-pulse" />
           )}
           <span className="truncate">{currentPhase}</span>
         </div>
 
-        {/* Phase Description */}
-        <p className="text-slate-400 text-xs mt-2 line-clamp-2">
+        {/* Phase Description - Hidden on mobile to prevent height jumps */}
+        <p className="hidden lg:block text-slate-400 text-xs mt-2 line-clamp-2">
           {phaseConfig.description}
         </p>
 
-        {/* Progress Bar */}
+        {/* Progress Bar - Hidden on mobile */}
         {currentPhase !== GCPhase.IDLE && (
-          <div className="w-full h-1.5 bg-slate-800 mt-3 rounded-full overflow-hidden">
+          <div className="hidden lg:block w-full h-1.5 bg-slate-800 mt-3 rounded-full overflow-hidden">
             <div
               className={`h-full ${phaseConfig.progressColor} animate-[shimmer_1.5s_infinite_linear]`}
               style={{ width: isSTW ? '100%' : '60%' }}
@@ -88,8 +89,8 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ stats, currentPhase }) =
         )}
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* Stats Grid - More compact on mobile */}
+      <div className="grid grid-cols-2 gap-1.5 lg:gap-2">
         <StatCard
           icon={<Database size={16} className="text-blue-400" />}
           label="Heap Usage"
