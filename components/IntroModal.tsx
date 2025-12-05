@@ -18,7 +18,7 @@ export const IntroModal: React.FC<IntroModalProps> = ({ mode, onClose }) => {
     const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
     return (
-        <div className="absolute top-20 right-6 z-50 w-[420px] bg-gradient-to-br from-slate-900/98 to-slate-950/98 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden">
+        <div className="fixed inset-x-0 bottom-0 z-50 md:absolute md:inset-auto md:top-20 md:right-6 w-full md:w-[420px] max-h-[85vh] md:max-h-none bg-gradient-to-br from-slate-900/98 to-slate-950/98 backdrop-blur-xl border border-slate-700/50 rounded-t-2xl md:rounded-2xl shadow-2xl shadow-black/50 overflow-hidden">
             {/* Header */}
             <div className="relative px-5 py-4 border-b border-slate-800/50 bg-gradient-to-r from-slate-800/30 to-transparent">
                 <div className="flex justify-between items-center">
@@ -54,10 +54,10 @@ export const IntroModal: React.FC<IntroModalProps> = ({ mode, onClose }) => {
                             key={idx}
                             onClick={() => setCurrentStep(idx)}
                             className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentStep
-                                    ? `flex-1 ${mode === GCMode.G1 ? 'bg-emerald-500' : 'bg-indigo-500'}`
-                                    : idx < currentStep
-                                        ? `w-6 ${mode === GCMode.G1 ? 'bg-emerald-500/50' : 'bg-indigo-500/50'}`
-                                        : 'w-6 bg-slate-700'
+                                ? `flex-1 ${mode === GCMode.G1 ? 'bg-emerald-500' : 'bg-indigo-500'}`
+                                : idx < currentStep
+                                    ? `w-6 ${mode === GCMode.G1 ? 'bg-emerald-500/50' : 'bg-indigo-500/50'}`
+                                    : 'w-6 bg-slate-700'
                                 }`}
                         />
                     ))}
@@ -75,8 +75,8 @@ export const IntroModal: React.FC<IntroModalProps> = ({ mode, onClose }) => {
                     onClick={prevStep}
                     disabled={currentStep === 0}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${currentStep === 0
-                            ? 'text-slate-600 cursor-not-allowed'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        ? 'text-slate-600 cursor-not-allowed'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
                         }`}
                 >
                     <ChevronLeft size={16} />
@@ -91,8 +91,8 @@ export const IntroModal: React.FC<IntroModalProps> = ({ mode, onClose }) => {
                     <button
                         onClick={nextStep}
                         className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${mode === GCMode.G1
-                                ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                                : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                            : 'bg-indigo-600 hover:bg-indigo-500 text-white'
                             }`}
                     >
                         Next
@@ -102,8 +102,8 @@ export const IntroModal: React.FC<IntroModalProps> = ({ mode, onClose }) => {
                     <button
                         onClick={onClose}
                         className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${mode === GCMode.G1
-                                ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                                : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                            : 'bg-indigo-600 hover:bg-indigo-500 text-white'
                             }`}
                     >
                         <Play size={14} />
@@ -181,9 +181,9 @@ const g1Steps: React.ReactNode[] = [
                     <div
                         key={i}
                         className={`aspect-square rounded text-[8px] font-bold flex items-center justify-center ${i < 4 ? 'bg-emerald-500 text-white' :
-                                i === 4 || i === 5 ? 'bg-cyan-500 text-white' :
-                                    i >= 10 && i <= 13 ? 'bg-amber-600 text-white' :
-                                        'bg-slate-700 border border-slate-600'
+                            i === 4 || i === 5 ? 'bg-cyan-500 text-white' :
+                                i >= 10 && i <= 13 ? 'bg-amber-600 text-white' :
+                                    'bg-slate-700 border border-slate-600'
                             }`}
                     >
                         {i < 4 ? 'E' : i === 4 || i === 5 ? 'S' : i >= 10 && i <= 13 ? 'O' : ''}
@@ -621,8 +621,8 @@ const zgcSteps: React.ReactNode[] = [
                     <div
                         key={i}
                         className={`aspect-square rounded text-[8px] font-bold flex items-center justify-center ${i < 6 ? 'bg-indigo-600 text-white' :
-                                i >= 6 && i <= 8 ? 'bg-indigo-400 text-indigo-900' :
-                                    'bg-slate-700 border border-slate-600'
+                            i >= 6 && i <= 8 ? 'bg-indigo-400 text-indigo-900' :
+                                'bg-slate-700 border border-slate-600'
                             }`}
                     >
                         {i < 6 ? 'Z' : i >= 6 && i <= 8 ? 'R' : ''}
