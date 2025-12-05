@@ -1,0 +1,5 @@
+{
+  "name": "G1 Garbage Collector Visualizer",
+  "description": "An interactive, animated simulation of the G1 (Garbage-First) Garbage Collector in the Java Virtual Machine. Visualize regions, Young GC, Concurrent Marking, and Mixed GC cycles in real-time.",
+  "requestFramePermissions": []
+}
