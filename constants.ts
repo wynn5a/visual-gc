@@ -1,3 +1,4 @@
+
 import { RegionType } from "./types";
 
 export const GRID_ROWS = 10;
@@ -10,12 +11,19 @@ export const MAX_EDEN_REGIONS = 25; // Trigger Young GC when reached
 export const OLD_GEN_THRESHOLD = 45; // Trigger Concurrent Mark when Total Heap > 45% (IHOP)
 export const MAX_AGE = 3; // Age to promote to Old Gen
 
+// ZGC Config
+export const ZGC_HEAP_THRESHOLD = 70; // Trigger ZGC when heap > 70%
+
 export const COLORS = {
   [RegionType.FREE]: "bg-slate-800 border-slate-700",
   [RegionType.EDEN]: "bg-emerald-500 border-emerald-400",
   [RegionType.SURVIVOR]: "bg-cyan-500 border-cyan-400",
   [RegionType.OLD]: "bg-amber-600 border-amber-500",
   [RegionType.HUMONGOUS]: "bg-purple-600 border-purple-500",
+  
+  // ZGC Colors
+  [RegionType.Z_PAGE]: "bg-indigo-600 border-indigo-500",
+  [RegionType.Z_RELOCATING]: "bg-indigo-400 border-indigo-300",
 };
 
 export const TEXT_COLORS = {
@@ -24,4 +32,6 @@ export const TEXT_COLORS = {
   [RegionType.SURVIVOR]: "text-cyan-950",
   [RegionType.OLD]: "text-amber-100",
   [RegionType.HUMONGOUS]: "text-purple-100",
+  [RegionType.Z_PAGE]: "text-indigo-100",
+  [RegionType.Z_RELOCATING]: "text-indigo-900",
 };

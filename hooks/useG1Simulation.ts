@@ -1,6 +1,7 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Region, RegionType, GCPhase, SimulationStats, LogEntry } from '../types';
-import { TOTAL_REGIONS, MAX_EDEN_REGIONS, OLD_GEN_THRESHOLD, MAX_AGE, TICK_RATE_MS } from '../constants';
+import { Region, RegionType, GCPhase, SimulationStats, LogEntry, GCMode } from '../types';
+import { TOTAL_REGIONS, MAX_EDEN_REGIONS, OLD_GEN_THRESHOLD, MAX_AGE, TICK_RATE_MS, ZGC_HEAP_THRESHOLD } from '../constants';
 
 const INITIAL_REGIONS: Region[] = Array.from({ length: TOTAL_REGIONS }, (_, i) => ({
   id: i,
@@ -11,7 +12,7 @@ const INITIAL_REGIONS: Region[] = Array.from({ length: TOTAL_REGIONS }, (_, i) =
   isTargeted: false,
 }));
 
-export const useG1Simulation = (isRunning: boolean, speedMultiplier: number) => {
+export const useGCSimulation = (isRunning: boolean, speedMultiplier: number, mode: GCMode) => {
   const [regions, setRegions] = useState<Region[]>(INITIAL_REGIONS);
   const [phase, setPhase] = useState<GCPhase>(GCPhase.IDLE);
   const [stats, setStats] = useState<SimulationStats>({
@@ -23,13 +24,13 @@ export const useG1Simulation = (isRunning: boolean, speedMultiplier: number) => 
   });
   const [logs, setLogs] = useState<LogEntry[]>([]);
   
-  // Use refs for simulation state to avoid closure staleness in intervals
   const regionsRef = useRef(regions);
   const phaseRef = useRef(phase);
+  const modeRef = useRef(mode);
 
-  // Sync refs
   useEffect(() => { regionsRef.current = regions; }, [regions]);
   useEffect(() => { phaseRef.current = phase; }, [phase]);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
 
   const addLog = useCallback((message: string, type: LogEntry['type'] = 'info') => {
     const entry: LogEntry = {
@@ -48,33 +49,30 @@ export const useG1Simulation = (isRunning: boolean, speedMultiplier: number) => 
 
   // --- Actions ---
 
-  const allocate = useCallback(() => {
+  const allocate = useCallback((isZGC: boolean = false) => {
     const currentRegions = [...regionsRef.current];
     const freeIndices = currentRegions
       .map((r, i) => r.type === RegionType.FREE ? i : -1)
       .filter(i => i !== -1);
 
     if (freeIndices.length === 0) {
-      // Full GC Panic (reset for demo simplicity)
-      addLog("Heap Full! Triggering Full GC (Panic)...", "error");
+      addLog("Heap Full! Emergency Clear...", "error");
       setRegions(currentRegions.map(r => ({ ...r, type: RegionType.FREE, usedPercentage: 0 })));
       setPhase(GCPhase.IDLE);
       return;
     }
 
-    // Allocate 1-3 regions
     const count = Math.min(Math.floor(Math.random() * 2) + 1, freeIndices.length);
     for (let k = 0; k < count; k++) {
       const idx = freeIndices[Math.floor(Math.random() * freeIndices.length)];
-      // Remove used index to avoid double picking
       const arrayIdx = freeIndices.indexOf(idx);
       if (arrayIdx > -1) freeIndices.splice(arrayIdx, 1);
 
       currentRegions[idx] = {
         ...currentRegions[idx],
-        type: RegionType.EDEN,
-        usedPercentage: Math.floor(Math.random() * 40) + 60, // 60-100% full
-        livenessPercentage: Math.floor(Math.random() * 60) + 20, // 20-80% live
+        type: isZGC ? RegionType.Z_PAGE : RegionType.EDEN,
+        usedPercentage: Math.floor(Math.random() * 40) + 60,
+        livenessPercentage: Math.floor(Math.random() * 60) + 20,
         age: 0,
       };
     }
@@ -87,166 +85,204 @@ export const useG1Simulation = (isRunning: boolean, speedMultiplier: number) => 
     }));
   }, [addLog, getHeapUsage]);
 
-  const performYoungGC = useCallback(async () => {
-    setPhase(GCPhase.YOUNG_GC);
-    addLog("Young GC Started: Evacuating Eden...", "warn");
+  // --- G1 Specific Logic ---
 
-    // Pause for animation
+  const performG1YoungGC = useCallback(async () => {
+    setPhase(GCPhase.YOUNG_GC);
+    addLog("G1 Young GC Started: STW Evacuation", "warn");
     await new Promise(r => setTimeout(r, 600));
 
     const currentRegions = [...regionsRef.current];
-    const edenRegions = currentRegions.filter(r => r.type === RegionType.EDEN);
-    const survivorRegions = currentRegions.filter(r => r.type === RegionType.SURVIVOR);
-    
-    // Calculate promotions and survivals
-    let promoted = 0;
-    let survived = 0;
-    let reclaimed = 0;
+    let promoted = 0, survived = 0, reclaimed = 0;
 
-    // Process regions
     const newRegions = currentRegions.map(r => {
       if (r.type === RegionType.EDEN || r.type === RegionType.SURVIVOR) {
-        // Simple logic: 
-        // If age > MAX_AGE -> Promote to OLD
-        // Else -> Move to SURVIVOR (simulated by just changing age/keeping survivor)
-        // If liveness is very low -> Reclaim (Garbage)
-        
-        // Random chance to be garbage collected entirely
         if (Math.random() > (r.livenessPercentage / 100)) {
             reclaimed++;
             return { ...r, type: RegionType.FREE, usedPercentage: 0, livenessPercentage: 0, age: 0, isTargeted: false };
         }
-
         if (r.age >= MAX_AGE) {
           promoted++;
-          return { 
-            ...r, 
-            type: RegionType.OLD, 
-            age: r.age + 1,
-            // Old gen usually accumulates garbage over time
-            livenessPercentage: Math.max(10, r.livenessPercentage - 10), 
-            isTargeted: false 
-          };
+          return { ...r, type: RegionType.OLD, age: r.age + 1, livenessPercentage: Math.max(10, r.livenessPercentage - 10), isTargeted: false };
         } else {
           survived++;
-          return { 
-            ...r, 
-            type: RegionType.SURVIVOR, 
-            age: r.age + 1,
-            isTargeted: false
-          };
+          return { ...r, type: RegionType.SURVIVOR, age: r.age + 1, isTargeted: false };
         }
       }
       return r;
     });
 
     setRegions(newRegions);
-    setStats(prev => ({
-      ...prev,
-      youngGCs: prev.youngGCs + 1,
-      memoryUsage: getHeapUsage(newRegions)
-    }));
-    addLog(`Young GC Done. Promoted: ${promoted}, Survived: ${survived}, Reclaimed: ${reclaimed}`, "success");
+    setStats(prev => ({ ...prev, youngGCs: prev.youngGCs + 1, memoryUsage: getHeapUsage(newRegions) }));
+    addLog(`Young GC Done. Promoted: ${promoted}, Survived: ${survived}`, "success");
 
-    // Check for Concurrent Mark trigger
-    const usage = getHeapUsage(newRegions);
-    if (usage > OLD_GEN_THRESHOLD) {
+    if (getHeapUsage(newRegions) > OLD_GEN_THRESHOLD) {
         setTimeout(() => setPhase(GCPhase.CONCURRENT_MARK), 500);
     } else {
         setPhase(GCPhase.IDLE);
     }
-
   }, [addLog, getHeapUsage]);
 
-
-  const performConcurrentMark = useCallback(async () => {
-    addLog("Concurrent Marking Cycle Started (IHOP Triggered)", "info");
-    
-    // Simulate phases of marking
-    // 1. Initial Mark (Piggybacks on Young GC usually, but we visualize separately)
-    // 2. Remark (Scan stack)
-    // 3. Cleanup (Identify empty regions)
-    
-    // Visualize scanning Old regions
+  const performG1ConcurrentMark = useCallback(async () => {
+    addLog("Concurrent Marking Started", "info");
     setRegions(prev => prev.map(r => r.type === RegionType.OLD ? { ...r, isTargeted: true } : r));
     await new Promise(r => setTimeout(r, 1000));
     
-    // Identify regions with high garbage (low liveness)
-    // Update liveness (simulate degradation over time)
-    const afterMark = regionsRef.current.map(r => {
-      if (r.type === RegionType.OLD) {
-        return { 
-            ...r, 
-            isTargeted: false,
-            // Simulate finding out true liveness
-            livenessPercentage: Math.max(5, r.livenessPercentage - Math.floor(Math.random() * 20)) 
-        };
-      }
-      return r;
-    });
-
-    setRegions(afterMark);
-    addLog("Marking Finished. Candidate regions identified.", "info");
+    setRegions(prev => prev.map(r => r.type === RegionType.OLD ? { 
+        ...r, 
+        isTargeted: false,
+        livenessPercentage: Math.max(5, r.livenessPercentage - Math.floor(Math.random() * 20)) 
+    } : r));
+    
+    addLog("Marking Finished", "info");
     setPhase(GCPhase.MIXED_GC);
   }, [addLog]);
 
-
-  const performMixedGC = useCallback(async () => {
-    addLog("Mixed GC Started: Collecting Young + Candidate Old Regions", "warn");
+  const performG1MixedGC = useCallback(async () => {
+    addLog("Mixed GC Started", "warn");
     await new Promise(r => setTimeout(r, 800));
 
     let currentRegions = [...regionsRef.current];
-    
-    // Filter Old regions with low liveness (Garbage First!)
-    // We want to collect regions that are mostly garbage to get max ROI
     const candidateOldIndices = currentRegions
         .map((r, i) => (r.type === RegionType.OLD && r.livenessPercentage < 60) ? i : -1)
         .filter(i => i !== -1)
-        .sort((a, b) => currentRegions[a].livenessPercentage - currentRegions[b].livenessPercentage) // Ascending liveness (most garbage first)
-        .slice(0, 8); // Limit how many old regions we take in one go (Target Pause Time)
+        .sort((a, b) => currentRegions[a].livenessPercentage - currentRegions[b].livenessPercentage)
+        .slice(0, 8);
 
-    // Mark them visually
     setRegions(prev => prev.map((r, i) => candidateOldIndices.includes(i) || r.type === RegionType.EDEN || r.type === RegionType.SURVIVOR ? { ...r, isTargeted: true } : r));
     await new Promise(r => setTimeout(r, 800));
 
     let reclaimedOld = 0;
-    
     currentRegions = regionsRef.current.map((r, i) => {
-        // Collect Young (Eden/Survivor) - Same logic as Young GC
         if (r.type === RegionType.EDEN || r.type === RegionType.SURVIVOR) {
              if (Math.random() > (r.livenessPercentage / 100)) {
                 return { ...r, type: RegionType.FREE, usedPercentage: 0, livenessPercentage: 0, age: 0, isTargeted: false };
             }
-            // Simply promote/survive logic simplified
-            return { 
-                ...r, 
-                type: r.age >= MAX_AGE ? RegionType.OLD : RegionType.SURVIVOR, 
-                age: r.age + 1,
-                isTargeted: false
-            };
+            return { ...r, type: r.age >= MAX_AGE ? RegionType.OLD : RegionType.SURVIVOR, age: r.age + 1, isTargeted: false };
         }
-
-        // Collect Candidate Old
         if (candidateOldIndices.includes(i)) {
-            // Evacuate live objects to other regions (simplified: just keep it Old but compact it, or free it if empty)
-            // In simulation: if liveness is low, we reclaim it and assume live objects moved to another "Old" region (not visualized individually for density)
             reclaimedOld++;
             return { ...r, type: RegionType.FREE, usedPercentage: 0, livenessPercentage: 0, age: 0, isTargeted: false };
         }
-        
         return { ...r, isTargeted: false };
     });
 
     setRegions(currentRegions);
-    setStats(prev => ({
-        ...prev,
-        mixedGCs: prev.mixedGCs + 1,
-        memoryUsage: getHeapUsage(currentRegions)
-    }));
+    setStats(prev => ({ ...prev, mixedGCs: prev.mixedGCs + 1, memoryUsage: getHeapUsage(currentRegions) }));
     addLog(`Mixed GC Done. Reclaimed ${reclaimedOld} Old Regions.`, "success");
     setPhase(GCPhase.IDLE);
-
   }, [addLog, getHeapUsage]);
+
+  // --- ZGC Specific Logic ---
+
+  // ZGC Helper: Simulate processing a bit of work and concurrent allocation
+  const zgcConcurrentStep = useCallback((work: () => void, probability: number) => {
+    // Perform GC work
+    work();
+    // Allow allocation (Concurrent!)
+    if (Math.random() > 0.3) allocate(true);
+  }, [allocate]);
+
+  const tickZGC = useCallback(async () => {
+    const currentRegions = regionsRef.current;
+    const usage = getHeapUsage(currentRegions);
+    const p = phaseRef.current;
+
+    // Trigger
+    if (p === GCPhase.IDLE) {
+      if (usage > ZGC_HEAP_THRESHOLD) {
+        setPhase(GCPhase.ZGC_MARK_START);
+      } else {
+        allocate(true);
+      }
+      return;
+    }
+
+    // Phases
+    if (p === GCPhase.ZGC_MARK_START) {
+      // Pause Phase (STW)
+      addLog("ZGC Pause Mark Start (STW)", "warn");
+      // Flash regions
+      setRegions(prev => prev.map(r => r.type === RegionType.Z_PAGE ? { ...r, isTargeted: true } : r));
+      setTimeout(() => {
+        setPhase(GCPhase.ZGC_CONCURRENT_MARK);
+      }, 200); // Short pause
+      return;
+    }
+
+    if (p === GCPhase.ZGC_CONCURRENT_MARK) {
+      // Simulate scanning: randomly untarget some regions, update liveness
+      // This runs over multiple ticks visually
+      const stillTargeted = currentRegions.filter(r => r.isTargeted).length;
+      
+      if (stillTargeted > 0) {
+        // Process a batch
+        const newRegions = currentRegions.map(r => {
+           if (r.isTargeted && Math.random() > 0.7) {
+             return { 
+                ...r, 
+                isTargeted: false, 
+                livenessPercentage: Math.max(0, r.livenessPercentage - Math.floor(Math.random() * 30)) 
+             };
+           }
+           return r;
+        });
+        setRegions(newRegions);
+        // Concurrent allocation
+        if (Math.random() > 0.5) allocate(true); 
+      } else {
+        setPhase(GCPhase.ZGC_MARK_END);
+      }
+      return;
+    }
+
+    if (p === GCPhase.ZGC_MARK_END) {
+       addLog("ZGC Pause Mark End (STW)", "warn");
+       setTimeout(() => setPhase(GCPhase.ZGC_CONCURRENT_RELOCATE), 200);
+       return;
+    }
+
+    if (p === GCPhase.ZGC_CONCURRENT_RELOCATE) {
+       // Find candidates (fragmented pages)
+       // We mark them as RELOCATING
+       const relocatingCount = currentRegions.filter(r => r.type === RegionType.Z_RELOCATING).length;
+       
+       if (relocatingCount === 0) {
+         // Identify new candidates
+         const candidates = currentRegions
+            .map((r, i) => (r.type === RegionType.Z_PAGE && r.livenessPercentage < 50) ? i : -1)
+            .filter(i => i !== -1)
+            .slice(0, 5); // Take 5 at a time
+            
+         if (candidates.length === 0) {
+            // Done
+            addLog("ZGC Cycle Complete", "success");
+            setStats(prev => ({ ...prev, mixedGCs: prev.mixedGCs + 1 })); // Count as cycle
+            setPhase(GCPhase.IDLE);
+            return;
+         }
+
+         setRegions(prev => prev.map((r, i) => candidates.includes(i) ? { ...r, type: RegionType.Z_RELOCATING } : r));
+         addLog(`ZGC Relocating ${candidates.length} pages...`, "info");
+       } else {
+         // Process relocation (Free them, maybe allocate new ones to simulate moving data)
+         const newRegions = currentRegions.map(r => {
+            if (r.type === RegionType.Z_RELOCATING) {
+               // Relocate: Become Free
+               if (Math.random() > 0.5) {
+                   return { ...r, type: RegionType.FREE, usedPercentage: 0, livenessPercentage: 0 };
+               }
+            }
+            return r;
+         });
+         setRegions(newRegions);
+         // Simulate moving data -> allocate fresh pages
+         if (Math.random() > 0.3) allocate(true);
+       }
+       return;
+    }
+
+  }, [allocate, getHeapUsage, addLog]);
 
 
   // --- Game Loop ---
@@ -256,35 +292,34 @@ export const useG1Simulation = (isRunning: boolean, speedMultiplier: number) => 
     let timeoutId: ReturnType<typeof setTimeout>;
 
     const tick = async () => {
-      const currentPhase = phaseRef.current;
-      const currentRegions = regionsRef.current;
-      const edenCount = currentRegions.filter(r => r.type === RegionType.EDEN).length;
+      if (modeRef.current === GCMode.G1) {
+          const currentPhase = phaseRef.current;
+          const currentRegions = regionsRef.current;
+          const edenCount = currentRegions.filter(r => r.type === RegionType.EDEN).length;
 
-      // State Machine
-      if (currentPhase === GCPhase.IDLE) {
-        if (edenCount >= MAX_EDEN_REGIONS) {
-          // Trigger GC
-          await performYoungGC();
-        } else {
-          // Normal Operation
-          allocate();
-        }
-      } else if (currentPhase === GCPhase.CONCURRENT_MARK) {
-          await performConcurrentMark();
-      } else if (currentPhase === GCPhase.MIXED_GC) {
-          await performMixedGC();
+          if (currentPhase === GCPhase.IDLE) {
+            if (edenCount >= MAX_EDEN_REGIONS) {
+              await performG1YoungGC();
+            } else {
+              allocate();
+            }
+          } else if (currentPhase === GCPhase.CONCURRENT_MARK) {
+              await performG1ConcurrentMark();
+          } else if (currentPhase === GCPhase.MIXED_GC) {
+              await performG1MixedGC();
+          }
+      } else {
+          // ZGC Logic
+          await tickZGC();
       }
       
-      // Reschedule tick
-      // We use a dynamic timeout to allow async operations (GC pauses) to finish
-      // before the next tick is scheduled.
       timeoutId = setTimeout(tick, (TICK_RATE_MS / speedMultiplier));
     };
 
     timeoutId = setTimeout(tick, TICK_RATE_MS / speedMultiplier);
 
     return () => clearTimeout(timeoutId);
-  }, [isRunning, speedMultiplier, allocate, performYoungGC, performConcurrentMark, performMixedGC]);
+  }, [isRunning, speedMultiplier, performG1YoungGC, performG1ConcurrentMark, performG1MixedGC, allocate, tickZGC]);
 
   const reset = useCallback(() => {
       setRegions(INITIAL_REGIONS);

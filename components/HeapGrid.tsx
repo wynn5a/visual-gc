@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Region, RegionType } from '../types';
 import { COLORS, TEXT_COLORS, GRID_COLS } from '../constants';
@@ -24,10 +25,12 @@ export const HeapGrid: React.FC<HeapGridProps> = ({ regions }) => {
 
 const RegionCell: React.FC<{ region: Region }> = React.memo(({ region }) => {
   // Determine content based on type
-  const label = region.type === RegionType.FREE ? "" : 
-                region.type === RegionType.EDEN ? "E" :
-                region.type === RegionType.SURVIVOR ? "S" :
-                region.type === RegionType.OLD ? "O" : "H";
+  let label = "";
+  if (region.type === RegionType.EDEN) label = "E";
+  else if (region.type === RegionType.SURVIVOR) label = "S";
+  else if (region.type === RegionType.OLD) label = "O";
+  else if (region.type === RegionType.Z_PAGE) label = "Z";
+  else if (region.type === RegionType.Z_RELOCATING) label = "R";
 
   return (
     <motion.div
@@ -61,7 +64,7 @@ const RegionCell: React.FC<{ region: Region }> = React.memo(({ region }) => {
              />
           </div>
 
-          {/* Age dots */}
+          {/* Age dots (G1 only really) */}
           {region.age > 0 && (
              <div className="absolute top-0.5 right-0.5 flex flex-col gap-[1px]">
                 {Array.from({ length: Math.min(region.age, 3) }).map((_, i) => (

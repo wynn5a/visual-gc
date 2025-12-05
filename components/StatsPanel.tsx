@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { SimulationStats, GCPhase } from '../types';
 import { Activity, Database, Clock, Zap } from 'lucide-react';
@@ -22,12 +23,20 @@ const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string |
 export const StatsPanel: React.FC<StatsPanelProps> = ({ stats, currentPhase }) => {
   const getPhaseColor = (phase: GCPhase) => {
     switch (phase) {
+      // G1
       case GCPhase.YOUNG_GC: return "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]";
       case GCPhase.MIXED_GC: return "text-orange-400 drop-shadow-[0_0_8px_rgba(251,146,60,0.5)]";
       case GCPhase.CONCURRENT_MARK: return "text-purple-400 drop-shadow-[0_0_8px_rgba(192,132,252,0.5)]";
+      // ZGC
+      case GCPhase.ZGC_MARK_START:
+      case GCPhase.ZGC_MARK_END: return "text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]"; // STW phases
+      case GCPhase.ZGC_CONCURRENT_MARK: return "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]";
+      case GCPhase.ZGC_CONCURRENT_RELOCATE: return "text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]";
       default: return "text-emerald-400";
     }
   };
+
+  const isZGC = currentPhase.toString().startsWith('ZGC');
 
   return (
     <div className="grid grid-cols-2 gap-2 mb-0">
@@ -64,8 +73,8 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ stats, currentPhase }) =
       />
       <StatCard 
         icon={<Zap size={16} className="text-red-400" />} 
-        label="Collections" 
-        value={`${stats.youngGCs}Y / ${stats.mixedGCs}M`} 
+        label={isZGC ? "Cycles" : "Collections"}
+        value={isZGC ? `${stats.mixedGCs}` : `${stats.youngGCs}Y / ${stats.mixedGCs}M`} 
         color="bg-red-400"
       />
     </div>
